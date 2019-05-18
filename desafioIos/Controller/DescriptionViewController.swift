@@ -52,7 +52,7 @@ class DescriptionViewController: UIViewController {
         titleTextField.text = movieTitle
         dateTextField.text = date
         descriptionView.text = movieDescription
-        //genreView.textLabel?.text = genre
+        genreTextField.text = genre
         posterRequest(url: baseUrl+fileSize+posterUrl)
     }
     

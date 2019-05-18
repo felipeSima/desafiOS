@@ -16,7 +16,7 @@ import SVProgressHUD
 
 class MovieViewController: UIViewController {
     
-    //MARK: - Properties
+    //MARK: - Properties, Constants
     
     var bankMovies = [Movies]()
     var searchMovies = [Movies]()
@@ -48,13 +48,16 @@ class MovieViewController: UIViewController {
     var posterPath: String = ""
     var imageUrl: String = ""
     
+    
+    //Initial Setup
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         //Initializing Networking Service
         startRequest(url: baseUrl+apiKey+endPoint+page)
         
-
+        
         //Setting the Delegate
         self.collectionView.delegate = self
         self.collectionView.dataSource = self
@@ -80,7 +83,8 @@ class MovieViewController: UIViewController {
     //MARK: - Networking Service Request
     
     func startRequest(url: String){
-        let genreUrl: String = "https://api.themoviedb.org/3/genre/movie/list?api_key=2c9f1fce7d092177515db21991f8cfd1&language=e"
+        let genreUrl: String = "https://api.themoviedb.org/3/genre/movie/list?api_key=2c9f1fce7d092177515db21991f8cfd1&language=en-US"
+        
         Alamofire.request(url, method: .get).responseString { (response) in
             if response.result.isSuccess {
                 
@@ -98,7 +102,7 @@ class MovieViewController: UIViewController {
         }
         Alamofire.request(genreUrl, method: .get).responseString { (response) in
             if response.result.isSuccess {
-    
+                
                 //Encoding Result valeu of type string for use as JSON
                 let encodedString = Data(response.result.value!.utf8)
                 do {
@@ -124,7 +128,6 @@ class MovieViewController: UIViewController {
                 allGenres.type = (data[jsonIndex]["name"].stringValue)
                 genre.append(allGenres)
             }
-
         }
     }
     
@@ -136,14 +139,21 @@ class MovieViewController: UIViewController {
                 allMovies.overview = (data[jsonIndex]["overview"].stringValue)
                 allMovies.posterPath = (data[jsonIndex]["poster_path"].stringValue)
                 allMovies.releaseDate = (data[jsonIndex]["release_date"].stringValue)
-                allMovies.genre = (data[jsonIndex]["genre_ids"].arrayObject) as! [Int]
+                for genreIndex in 0..<genre.count {
+                    let movieId = data[jsonIndex]["genre_ids"][0].stringValue
+                    let genreId = genre[genreIndex].id
+                    if movieId == genreId {
+                        allMovies.genre = genre[genreIndex].type
+                    }
+                }
                 bankMovies.append(allMovies)
             }
             collectionView.reloadData()
         }
     }
     
-    //MARK: - MIssing this
+    //MARK: - Prepare for Segue
+    
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         //print(index)
         if isFiltering(){
@@ -154,7 +164,7 @@ class MovieViewController: UIViewController {
                 destinationVC?.date = searchMovies[(selectedIndexPath?.row)!].releaseDate
                 destinationVC?.movieDescription = searchMovies[(selectedIndexPath?.row)!].overview
                 destinationVC?.posterUrl = searchMovies[(selectedIndexPath?.row)!].posterPath
-                //destinationVC?.genre = bankMovies[(selectedIndexPath?.row)!]!.overview
+                destinationVC?.genre = bankMovies[(selectedIndexPath?.row)!].genre
             }
             
         }
@@ -166,7 +176,7 @@ class MovieViewController: UIViewController {
                 destinationVC?.date = bankMovies[(selectedIndexPath?.row)!].releaseDate
                 destinationVC?.movieDescription = bankMovies[(selectedIndexPath?.row)!].overview
                 destinationVC?.posterUrl = bankMovies[(selectedIndexPath?.row)!].posterPath
-                //destinationVC?.genre = bankMovies[(selectedIndexPath?.row)!]!.overview
+                destinationVC?.genre = bankMovies[(selectedIndexPath?.row)!].genre
             }
         }
     }
@@ -226,7 +236,6 @@ extension MovieViewController: UICollectionViewDelegate {
         return true
     }
     
-    // Uncomment this method to specify if the specified item should be selected
     func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath)   -> Bool {
         performSegue(withIdentifier: "details", sender: indexPath)
         return true
@@ -245,14 +254,12 @@ extension MovieViewController: UICollectionViewDelegateFlowLayout {
         return CGSize(width: widthPerItem, height: (view.frame.width/2)*1.2)
     }
     
-    //3
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         insetForSectionAt section: Int) -> UIEdgeInsets {
         return sectionInsets
     }
     
-    // 4
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         minimumLineSpacingForSectionAt section: Int) -> CGFloat {
@@ -265,10 +272,9 @@ extension MovieViewController: UICollectionViewDelegateFlowLayout {
 //MARK: - Search Bar Methods
 extension MovieViewController : UISearchBarDelegate {
     
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//
-//        collectionView.reloadData()
-//    }
+     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
+    }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchBar.text?.count == 0 {
@@ -276,15 +282,16 @@ extension MovieViewController : UISearchBarDelegate {
         } else {
             searchMovies = bankMovies.filter({( movies : Movies) -> Bool in
                 return movies.title.lowercased().contains(searchText.lowercased())
-                })
+            })
             collectionView.reloadData()
         }
     }
-
+    
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
         searching = false
         searchBar.text = ""
         collectionView.reloadData()
+        searchBar.resignFirstResponder()
     }
     
     func searchBarIsEmpty() -> Bool {
@@ -294,7 +301,7 @@ extension MovieViewController : UISearchBarDelegate {
     
     func filterContentForSearchText(_ searchText: String, scope: String = "All") {
         searchMovies = bankMovies.filter({( movies : Movies) -> Bool in
-                return movies.title.lowercased().contains(searchText.lowercased())
+            return movies.title.lowercased().contains(searchText.lowercased())
             } as! (Movies?) -> Bool)
         collectionView.reloadData()
     }

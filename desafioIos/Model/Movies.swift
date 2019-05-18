@@ -15,5 +15,5 @@ class Movies {
     var overview: String = ""
     var posterPath: String = ""
     var releaseDate: String = ""
-    var genre = [Int]()
+    var genre: String = ""
 }
