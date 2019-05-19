@@ -12,13 +12,18 @@ import AlamofireImage
 import SwiftyJSON
 import RealmSwift
 
+
 class collectionCell: UICollectionViewCell {
 
     var link: MovieViewController?
     
+    var dbLink: FavoriteTableViewController?
+    
     let realm = try! Realm()
     
     let favorites = Favorites()
+    
+    var movieInfo: Results<Favorites>?
     
     @IBOutlet weak var movieView: UIImageView!
     
@@ -42,9 +47,18 @@ class collectionCell: UICollectionViewCell {
     
     func favoriteSave() {
         do{
-            let realm = try Realm()
             try realm.write {
                 realm.add(favorites)
+            }
+        }catch {
+            print("Error initializing new realm: \(error)")
+        }
+    }
+    
+    func favoriteDelete() {
+        do{
+            try realm.write {
+                realm.delete(favorites)
             }
         }catch {
             print("Error initializing new realm: \(error)")
@@ -60,24 +74,41 @@ class collectionCell: UICollectionViewCell {
             favorites.realmPoster = movieInfo.posterPath
         }
     }
+    
+    func deleteFavorite(sender: Any){
+        let indexPath = sender as! IndexPath
+        do{
+            let realm = try Realm()
+            try realm.write {
+                realm.delete(movieInfo![indexPath.row])
+            }
+        }catch {
+            print("Error initializing new realm: \(error)")
+        }
+    }
 
     @IBAction func favoriteButtonPressed(_ sender: Any) {
         
         if buttonToggle == false {
-
-            favoriteButton.setImage(UIImage(named: "favorite_gray_icon"), for: .normal)
-            buttonToggle = true
-        }
-            
-        else {
             favoriteInfo()
             favoriteSave()
             favoriteButton.setImage(UIImage(named: "favorite_full_icon"), for: .normal)
+            buttonToggle = true
+            print("CLICOU")
+        } else {
+            favoriteButton.setImage(UIImage(named: "favorite_gray_icon"), for: .normal)
             buttonToggle = false
+//            print(dbLink?.movieInfo?.count)
+//            if let movieInfo = dbLink?.movieInfo {
+//                print("COUNT: \(movieInfo.count)")
+//                for index in 0..<movieInfo.count {
+//                    if favorites.realmTitle == movieInfo[index].realmTitle{
+//                        dbLink?.deleteFavorite(sender: index)
+//                        dbLink?.tableView.reloadData()
+//                    }
+//                }
+//            }
         }
-        
-        //Perfoming persistance data of the
-        
     }
 }
 
